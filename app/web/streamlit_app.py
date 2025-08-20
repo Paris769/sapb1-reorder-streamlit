@@ -15,9 +15,10 @@ import os
 import tempfile
 from datetime import date
 
-import streamlit as st
+im#port streamlit as st
+from app import parsing, io_excel, rules, reporting
 
-from .. import parsing, io_excel, rules, reporting
+##from .. import parsing, io_excel, rules, reporting
 
 
 def main() -> None:
