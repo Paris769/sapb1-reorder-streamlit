@@ -102,7 +102,21 @@ def generate_orders_by_vendor_xlsx(
             # Se non ci sono ordini, crea un foglio vuoto
             pd.DataFrame().to_excel(writer, sheet_name="Nessun_ordine", index=False)
         else:
-            for vendor, subset in orders.groupby("vendor_name"):
+            # Determina l'ordine dei fogli (fornitori). Di default alfabetico.
+            vendor_groups = orders.groupby("vendor_name")
+            if sort_by == "relevance" and "relevance_score" in orders.columns:
+                # Calcola un punteggio di rilevanza per ogni fornitore. Usando il massimo tra le righe
+                # per dare priorità ai fornitori con almeno un articolo molto urgente. In alternativa
+                # si potrebbe usare la somma o un'altra misura aggregata.
+                vendor_scores = vendor_groups["relevance_score"].max()
+                # Ordina in senso decrescente (maggiore rilevanza prima)
+                sorted_vendors = vendor_scores.sort_values(ascending=False).index.tolist()
+            else:
+                # Ordina alfabeticamente i fornitori
+                sorted_vendors = sorted(vendor_groups.groups.keys())
+            # Genera un foglio per ciascun fornitore nell'ordine scelto
+            for vendor in sorted_vendors:
+                subset = vendor_groups.get_group(vendor)
                 sheet_name = vendor if isinstance(vendor, str) and vendor else "Senza_nome"
                 # Excel ha un limite di 31 caratteri per il nome del foglio
                 sheet_name = sheet_name[:31]
