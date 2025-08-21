@@ -15,6 +15,20 @@ import os
 import tempfile
 from datetime import date
 
+# --- Add parent folder to sys.path ----------------------------------------------------
+# When this script is executed via `streamlit run`, Python does not treat the
+# repository as an installable package. To make the top-level `app` package
+# importable (for parsing, io_excel, rules, reporting), we append the parent
+# directory of this file to `sys.path`. This resolves ModuleNotFoundError
+# errors on Streamlit Cloud and when running locally outside of package context.
+import sys
+from pathlib import Path
+
+# Append the parent directory (i.e. sapb1-reorder-streamlit/app) to sys.path
+parent_dir = Path(__file__).resolve().parents[1]
+if str(parent_dir) not in sys.path:
+    sys.path.append(str(parent_dir))
+
 import streamlit as st
 
 # Absolute imports are required when running this module as a script via Streamlit.
