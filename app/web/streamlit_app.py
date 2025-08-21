@@ -24,10 +24,21 @@ from datetime import date
 import sys
 from pathlib import Path
 
-# Append the parent directory (i.e. sapb1-reorder-streamlit/app) to sys.path
-parent_dir = Path(__file__).resolve().parents[1]
-if str(parent_dir) not in sys.path:
-    sys.path.append(str(parent_dir))
+
+# Append the repository root (the parent of the `app` package) to ``sys.path``
+#
+# When this script is executed via ``streamlit run``, Python evaluates it as a
+# stand‑alone module rather than as part of an installed package.  In that
+# context the ``app`` package (which lives inside the repository root) is not
+# importable by default because its parent directory is not on ``sys.path``.
+# To resolve this, compute the directory two levels above this file
+# (i.e. the repository root) and add it to ``sys.path`` if it isn't already
+# present.  This allows ``import app`` to succeed on Streamlit Cloud and when
+# running locally outside of a package context.
+parent_dir = Path(__file__).resolve().parents[2]
+parent_str = str(parent_dir)
+if parent_str not in sys.path:
+    sys.path.append(parent_str)
 
 import streamlit as st
 
