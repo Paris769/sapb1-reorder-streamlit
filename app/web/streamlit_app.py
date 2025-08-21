@@ -152,6 +152,18 @@ def main() -> None:
         st.write(f"Articoli con ordine suggerito: **{items_to_order}**")
         st.write(f"Quantità totale da ordinare: **{total_qty_to_order}**")
 
+        # Opzioni di ordinamento per l'esportazione e l'anteprima
+        sort_option = st.selectbox(
+            "Ordina righe degli ordini per:",
+            (
+                "Alfabetico (codice prodotto)",
+                "Rilevanza (urgenza × domanda)",
+            ),
+            index=0,
+            help="Seleziona l'ordinamento delle righe negli ordini per fornitore e nell'anteprima",
+        )
+        sort_by = "relevance" if sort_option.startswith("Rilevanza") else "alphabetical"
+
         # Mostra i primi 100 ordini per anteprima
         if not orders_df.empty:
             st.subheader("Anteprima ordini")
@@ -164,8 +176,17 @@ def main() -> None:
                 "projected_available",
                 "target_level",
                 "coverage_days",
+                "relevance_score",
             ]
-            st.dataframe(orders_df[preview_cols].sort_values(by="vendor_name").head(100))
+            # Ordina le righe in base alla scelta dell'utente
+            preview_df = orders_df.copy()
+            if sort_by == "relevance" and "relevance_score" in preview_df.columns:
+                preview_df = preview_df.sort_values(
+                    by=["relevance_score", "product_code"], ascending=[False, True]
+                )
+            else:
+                preview_df = preview_df.sort_values(by="product_code", ascending=True)
+            st.dataframe(preview_df[preview_cols].head(100))
         else:
             st.info("Nessun articolo necessita di riordino con i parametri selezionati.")
 
@@ -177,7 +198,10 @@ def main() -> None:
             vendors_csv_path = os.path.join(tmpdir, "vendors_template.csv")
 
             reporting.generate_analysis_xlsx(reorder_df, analysis_path)
-            reporting.generate_orders_by_vendor_xlsx(reorder_df, vendor_path)
+            # Passa la modalità di ordinamento alla funzione di esportazione degli ordini
+            reporting.generate_orders_by_vendor_xlsx(
+                reorder_df, vendor_path, sort_by=sort_by
+            )
             reporting.generate_vendors_template_csv(reorder_df, vendors_csv_path)
 
             # Leggi i file in memoria e crea i pulsanti di download
