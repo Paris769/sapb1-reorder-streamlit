@@ -70,12 +70,27 @@ def generate_analysis_xlsx(df: pd.DataFrame, output_path: str) -> str:
     return str(path)
 
 
-def generate_orders_by_vendor_xlsx(df: pd.DataFrame, output_path: str) -> str:
+def generate_orders_by_vendor_xlsx(
+    df: pd.DataFrame,
+    output_path: str,
+    *,
+    sort_by: str = "alphabetical",
+) -> str:
     """Esporta un workbook con un foglio per ciascun fornitore.
+
+    Per impostazione predefinita, le righe all'interno di ogni foglio sono
+    ordinate alfabeticamente per ``product_code``. È possibile richiedere
+    l'ordinamento per "rilevanza" specificando ``sort_by="relevance"``,
+    nel qual caso le righe sono ordinate in base alla colonna ``relevance_score``
+    decrescente (maggiore rilevanza in alto).  Se la colonna ``relevance_score``
+    non è presente, l'ordinamento di ripiego resta alfabetico.
 
     Args:
         df: DataFrame risultante da ``compute_reorder``.
         output_path: Percorso di esportazione del file.
+        sort_by: Modalità di ordinamento delle righe all'interno di ogni foglio.
+            Può essere "alphabetical" (ordina per product_code) oppure
+            "relevance" (ordina per relevance_score decrescente).
 
     Returns:
         Il percorso del file generato.
@@ -91,7 +106,17 @@ def generate_orders_by_vendor_xlsx(df: pd.DataFrame, output_path: str) -> str:
                 sheet_name = vendor if isinstance(vendor, str) and vendor else "Senza_nome"
                 # Excel ha un limite di 31 caratteri per il nome del foglio
                 sheet_name = sheet_name[:31]
-                subset.to_excel(writer, sheet_name=sheet_name, index=False)
+                # Ordina il sotto-DataFrame secondo la modalità richiesta
+                sorted_subset = subset.copy()
+                if sort_by == "relevance" and "relevance_score" in sorted_subset.columns:
+                    # Ordina per rilevanza discendente; a parità di punteggio usa il codice articolo per stabilità
+                    sorted_subset = sorted_subset.sort_values(
+                        by=["relevance_score", "product_code"], ascending=[False, True]
+                    )
+                else:
+                    # Ordina alfabeticamente per codice articolo
+                    sorted_subset = sorted_subset.sort_values(by="product_code", ascending=True)
+                sorted_subset.to_excel(writer, sheet_name=sheet_name, index=False)
     return str(path)
 
 

@@ -37,7 +37,6 @@ import numpy as np
 import pandas as pd
 
 
-
 def _safe_numeric(series: pd.Series) -> pd.Series:
     """Converte una serie in numerico sostituendo i NaN con 0.
 
@@ -48,7 +47,6 @@ def _safe_numeric(series: pd.Series) -> pd.Series:
         Una serie con valori numerici dove i NaN sono sostituiti con 0.
     """
     return pd.to_numeric(series.fillna(0), errors="coerce").fillna(0)
-
 
 
 def compute_reorder(
@@ -164,6 +162,18 @@ def compute_reorder(
         agg["projected_available"] / agg["daily_demand"],
         np.nan,
     )
+
+    # Valuta la "rilevanza" del riordino combinando urgenza (copertura) e domanda.
+    # Per dare priorità agli articoli con scorte basse e domanda elevata, calcoliamo
+    # un punteggio che cresce al diminuire della copertura e aumenta con la domanda.
+    # Coperture nulle o negative vengono trattate come 0 (urgenza massima).
+    safe_cov = agg["coverage_days"].fillna(0).copy()
+    # Coperture negative non hanno significato pratico; forziamo il minimo a 0
+    safe_cov[safe_cov < 0] = 0
+    # Il punteggio di rilevanza è la domanda giornaliera divisa per (copertura + 1)
+    # In questo modo, una copertura più bassa e una domanda più alta portano a un
+    # valore maggiore. Per copertura=0 il divisore è 1, quindi il punteggio = domanda.
+    agg["relevance_score"] = agg["daily_demand"] / (safe_cov + 1)
 
     # Scarta colonne non più necessarie per la restituzione finale? Manteniamo tutte per audit
     return agg
