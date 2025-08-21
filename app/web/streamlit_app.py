@@ -13,7 +13,7 @@ from __future__ import annotations
 import io
 import os
 import tempfile
-from datetime import date
+from datetime import date, timedelta
 
 # --- Add parent folder to sys.path ----------------------------------------------------
 # When this script is executed via `streamlit run`, Python does not treat the
@@ -86,14 +86,43 @@ def main() -> None:
         st.success(f"File caricato: {uploaded_file.name}")
 
         # Estrae l'intervallo di date dal nome del file
+        # Se il parsing non riesce, start_date e end_date sono None.
         start_date, end_date = parsing.extract_period_from_filename(uploaded_file.name)
         if start_date and end_date:
             st.info(f"Periodo individuato nel nome file: {start_date} → {end_date}")
         else:
             st.warning(
                 "Non è stato possibile rilevare l'intervallo di date dal nome del file. "
-                "Il periodo verrà assunto pari a 30 giorni."
+                "Puoi impostare manualmente il periodo nelle caselle qui sotto."
             )
+
+        # Permette all'utente di impostare manualmente il periodo di analisi.
+        # Se il parsing automatico non ha trovato le date, utilizza gli ultimi 30 giorni come default.
+        if not start_date or not end_date:
+            default_start = date.today() - timedelta(days=30)
+            default_end = date.today()
+        else:
+            default_start = start_date
+            default_end = end_date
+
+        # Interfaccia per selezionare il periodo: data inizio e data fine.
+        # Le date selezionate sovrascrivono eventuali date rilevate dal nome file.
+        col_period_start, col_period_end = st.columns(2)
+        with col_period_start:
+            manual_start = st.date_input(
+                "Data inizio periodo",
+                value=default_start,
+                help="Seleziona la data di inizio del periodo da analizzare",
+            )
+        with col_period_end:
+            manual_end = st.date_input(
+                "Data fine periodo",
+                value=default_end,
+                help="Seleziona la data di fine del periodo da analizzare",
+            )
+        # Aggiorna start_date e end_date con le scelte dell'utente
+        start_date = manual_start
+        end_date = manual_end
 
         # Lettura del file Excel
         try:
