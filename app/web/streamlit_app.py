@@ -49,6 +49,11 @@ import streamlit as st
 # how the application is executed.
 from app import parsing, io_excel, rules, reporting
 
+# Import pandas here to support fallback calculations when the relevance_score
+# column is missing.  Although compute_reorder usually provides this column,
+# defensively importing pandas allows us to compute it on the fly.
+import pandas as pd
+
 
 def main() -> None:
     st.set_page_config(page_title="Riordino SAP B1", layout="wide")
@@ -178,15 +183,32 @@ def main() -> None:
                 "coverage_days",
                 "relevance_score",
             ]
-            # Ordina le righe in base alla scelta dell'utente
+            # Copia il DataFrame degli ordini per l'anteprima
             preview_df = orders_df.copy()
+            # Se la colonna relevance_score è assente per qualche motivo, calcolala al volo
+            # usando la stessa formula di compute_reorder: domanda giornaliera divisa per
+            # (copertura + 1). Le coperture negative o nulle vengono impostate a zero.
+            if "relevance_score" not in preview_df.columns:
+                cov = preview_df.get("coverage_days").copy()
+                # Se coverage_days non è presente, crea una serie di zeri della lunghezza del DF
+                if cov is None:
+                    cov = pd.Series([0] * len(preview_df), index=preview_df.index)
+                # Gestisce NaN e valori negativi impostandoli a 0
+                cov = cov.fillna(0)
+                cov[cov < 0] = 0
+                # Calcola il punteggio di rilevanza: daily_demand /(coverage+1)
+                preview_df["relevance_score"] = preview_df.get("daily_demand", 0) / (cov + 1)
+
+            # Ordina le righe in base alla scelta dell'utente
             if sort_by == "relevance" and "relevance_score" in preview_df.columns:
                 preview_df = preview_df.sort_values(
                     by=["relevance_score", "product_code"], ascending=[False, True]
                 )
             else:
                 preview_df = preview_df.sort_values(by="product_code", ascending=True)
-            st.dataframe(preview_df[preview_cols].head(100))
+            # Filtra solo le colonne disponibili per evitare KeyError se qualche colonna manca
+            available_cols = [c for c in preview_cols if c in preview_df.columns]
+            st.dataframe(preview_df[available_cols].head(100))
         else:
             st.info("Nessun articolo necessita di riordino con i parametri selezionati.")
 
