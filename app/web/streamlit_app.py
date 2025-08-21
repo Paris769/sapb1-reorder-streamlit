@@ -15,12 +15,14 @@ import os
 import tempfile
 from datetime import date
 
-import streamlit as 
-st
+import streamlit as st
 
+# Absolute imports are required when running this module as a script via Streamlit.
+# Using a package-relative import (from .. import ...) would fail because
+# `streamlit run` executes this file outside of the package context. Referencing
+# the top-level package `app` ensures the modules can be located regardless of
+# how the application is executed.
 from app import parsing, io_excel, rules, reporting
-
-##from .. import parsing, io_excel, rules, reporting
 
 
 def main() -> None:
