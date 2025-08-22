@@ -35,6 +35,13 @@ _COLUMN_SYNONYMS: Dict[str, list[str]] = {
 }
 
 
+# Add synonyms for supplier and customer quantity columns (ordini)
+try:
+    _COLUMN_SYNONYMS["qty_already_ordered_suppliers"].append("quantitaordinatadaifornitori")
+    _COLUMN_SYNONYMS["qty_committed_open_customer_orders"].append("quantitaordinatadaiclienti")
+except KeyError:
+    pass
+
 def _normalize_column_name(name: str) -> str:
     """Elimina caratteri speciali e converte in minuscolo una stringa."""
     name = name.lower()
