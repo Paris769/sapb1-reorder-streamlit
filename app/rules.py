@@ -126,8 +126,8 @@ def compute_reorder(
         qty_shipped_period=("qty_shipped_period", "sum"),
         # usa il massimo per evitare di sommare lo stesso ordine ai fornitori più volte
         qty_already_ordered_suppliers=("qty_already_ordered_suppliers", "max"),
-        # somma gli ordini clienti aperti per ottenere la quantità totale
-        qty_committed_open_customer_orders=("qty_committed_open_customer_orders", "sum"),
+        # anche la quantità ordinata dai clienti è unica per articolo: usa il massimo per non duplicarla
+        qty_committed_open_customer_orders=("qty_committed_open_customer_orders", "max"),
         stock_on_hand_total=("stock_on_hand_total", "max"),
         avg_sales_last_6_months=("avg_sales_last_6_months", "max"),
         pack_size=("pack_size", "max"),
