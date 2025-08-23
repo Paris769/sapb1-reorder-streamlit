@@ -43,9 +43,33 @@ def generate_analysis_xlsx(df: pd.DataFrame, output_path: str) -> str:
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
         # Ordini da emettere
         orders = df[df["qty_to_order"] > 0]
-        orders.to_excel(writer, sheet_name="Ordini_suggeriti", index=False)
+        # Definisce la mappa di traduzione per i nomi delle colonne
+        col_map = {
+            "product_code": "Codice articolo",
+            "product_description": "Descrizione articolo",
+            "vendor_name": "Fornitore",
+            "qty_to_order": "Quantità da ordinare",
+            "qty_shipped_period": "Quantità spedita (periodo)",
+            "qty_ordered_period": "Quantità ordinata (periodo)",
+            "qty_already_ordered_suppliers": "Quantità ordinata ai fornitori",
+            "qty_committed_open_customer_orders": "Quantità ordinata dai clienti",
+            "stock_on_hand_total": "Giacenza totale",
+            "avg_sales_last_6_months": "Media vendite 6 mesi",
+            "pack_size": "Pezzi collo/scatola",
+            "daily_demand": "Domanda giornaliera",
+            "safety_stock_qty": "Scorta di sicurezza",
+            "reorder_point": "Punto di riordino",
+            "target_level": "Livello target",
+            "projected_available": "Disponibilità proiettata",
+            "coverage_days": "Giorni di copertura",
+            "relevance_score": "Punteggio rilevanza",
+        }
+        # Rinominare colonne per ordini suggeriti
+        orders_renamed = orders.rename(columns={k: v for k, v in col_map.items() if k in orders.columns})
+        orders_renamed.to_excel(writer, sheet_name="Ordini_suggeriti", index=False)
         # Dettaglio completo
-        df.to_excel(writer, sheet_name="Dettaglio_calcoli", index=False)
+        df_renamed = df.rename(columns={k: v for k, v in col_map.items() if k in df.columns})
+        df_renamed.to_excel(writer, sheet_name="Dettaglio_calcoli", index=False)
         # Riepilogo per fornitore
         if not orders.empty:
             summary = (
@@ -60,13 +84,21 @@ def generate_analysis_xlsx(df: pd.DataFrame, output_path: str) -> str:
             summary = pd.DataFrame(
                 {"vendor_name": [], "num_sku": [], "total_qty": []}
             )
+        # Rinominare anche il riepilogo
+        summary = summary.rename(columns={
+            "vendor_name": "Fornitore",
+            "num_sku": "Numero articoli",
+            "total_qty": "Quantità totale da ordinare",
+        })
         summary.to_excel(writer, sheet_name="Riepilogo_fornitori", index=False)
         # Vicini al riordino: projected_available < reorder_point
         near = df[df["projected_available"] < df["reorder_point"]]
-        near.to_excel(writer, sheet_name="Vicini_riordino", index=False)
+        near_renamed = near.rename(columns={k: v for k, v in col_map.items() if k in near.columns})
+        near_renamed.to_excel(writer, sheet_name="Vicini_riordino", index=False)
         # Eccezioni: daily_demand <= 0 o pack_size <= 0
         exceptions = df[(df["daily_demand"] <= 0) | (df["pack_size"] <= 0)]
-        exceptions.to_excel(writer, sheet_name="Eccezioni", index=False)
+        exceptions_renamed = exceptions.rename(columns={k: v for k, v in col_map.items() if k in exceptions.columns})
+        exceptions_renamed.to_excel(writer, sheet_name="Eccezioni", index=False)
     return str(path)
 
 
@@ -130,7 +162,30 @@ def generate_orders_by_vendor_xlsx(
                 else:
                     # Ordina alfabeticamente per codice articolo
                     sorted_subset = sorted_subset.sort_values(by="product_code", ascending=True)
-                sorted_subset.to_excel(writer, sheet_name=sheet_name, index=False)
+                # Rinominare le colonne in italiano per l'output.
+                col_map = {
+                    "product_code": "Codice articolo",
+                    "product_description": "Descrizione articolo",
+                    "vendor_name": "Fornitore",
+                    "qty_to_order": "Quantità da ordinare",
+                    "qty_shipped_period": "Quantità spedita (periodo)",
+                    "qty_ordered_period": "Quantità ordinata (periodo)",
+                    "qty_already_ordered_suppliers": "Quantità ordinata ai fornitori",
+                    "qty_committed_open_customer_orders": "Quantità ordinata dai clienti",
+                    "stock_on_hand_total": "Giacenza totale",
+                    "avg_sales_last_6_months": "Media vendite 6 mesi",
+                    "pack_size": "Pezzi collo/scatola",
+                    "daily_demand": "Domanda giornaliera",
+                    "safety_stock_qty": "Scorta di sicurezza",
+                    "reorder_point": "Punto di riordino",
+                    "target_level": "Livello target",
+                    "projected_available": "Disponibilità proiettata",
+                    "coverage_days": "Giorni di copertura",
+                    "relevance_score": "Punteggio rilevanza",
+                }
+                # Applica la rinomina solo alle colonne presenti
+                renamed_subset = sorted_subset.rename(columns={k: v for k, v in col_map.items() if k in sorted_subset.columns})
+                renamed_subset.to_excel(writer, sheet_name=sheet_name, index=False)
     return str(path)
 
 

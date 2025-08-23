@@ -115,9 +115,18 @@ def compute_reorder(
 
     # Raggruppa per articolo e fornitore
     group_cols = ["product_code", "vendor_name"]
+    # Aggregazione per ciascun codice articolo e fornitore.
+    # Per le colonne ``qty_already_ordered_suppliers`` e ``qty_committed_open_customer_orders``
+    # si usa un aggregatore specifico: la quantità di ordini ai fornitori non deve essere
+    # sommata perché il valore è identico su tutte le righe del medesimo articolo e
+    # fornitore (il dato proviene dalla tabella ordini fornitore). Invece la quantità
+    # ordinata dai clienti va sommata in quanto rappresenta il totale degli ordini
+    # aperti dei clienti per quell'articolo.
     agg = df.groupby(group_cols).agg(
         qty_shipped_period=("qty_shipped_period", "sum"),
-        qty_already_ordered_suppliers=("qty_already_ordered_suppliers", "sum"),
+        # usa il massimo per evitare di sommare lo stesso ordine ai fornitori più volte
+        qty_already_ordered_suppliers=("qty_already_ordered_suppliers", "max"),
+        # somma gli ordini clienti aperti per ottenere la quantità totale
         qty_committed_open_customer_orders=("qty_committed_open_customer_orders", "sum"),
         stock_on_hand_total=("stock_on_hand_total", "max"),
         avg_sales_last_6_months=("avg_sales_last_6_months", "max"),
