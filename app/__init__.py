@@ -9,3 +9,5 @@ __all__ = [
     "rules",
     "reporting",
 ]
+# Extra tabs (safe import)
+import app.web.extensions  # noqa: F401
